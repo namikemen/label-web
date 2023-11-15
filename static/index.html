@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Image Labeling Tool</title>
+    <h1 id="title"> Image Labeling Tool</h1>
     <link rel="shortcut icon" href="favicon.ico" type="image/ico"/>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="styles.css" type="text/css" rel="stylesheet"/>
@@ -15,16 +16,23 @@
         <option value="1">1</option>
     </select> -->
     <div id="sidebar"></div>
-    <canvas id="canvas" ></canvas>
-    <div class="Tools">
-        <button class="button" id="saveButton">Save Labels</button>
-        <button class="button" id="deleteButton">Undo</button>
-
-        <div id="label1" class="color-fielgit remote add origin <URL_OF_YOUR_REPOSITORY>d" style="background: red;">label 1</div>
-        <div id="label2" class="color-field" style="background: blue;">label 2</div>
-        <div id="label3" class="color-field" style="background: green;">label 3</div>
-
+    <div id="labelbar-container">
+        <h1 id="labelbar-heading">Coordinate</h1>
+        <div id="labelbar"></div>
     </div>
+    <div id="canvas-container">
+        <canvas id="canvas" ></canvas>
+        <div class="Tools">
+            <button class="button" id="saveButton">Save Labels</button>
+            <button class="button" id="UndoButton">Undo</button>
+
+            <div id="label1" class="color-field" style="background: red;">label 1</div>
+            <div id="label2" class="color-field" style="background: blue;">label 2</div>
+            <div id="label3" class="color-field" style="background: green;">label 3</div>
+
+        </div>
+    </div>
+    
     
     <script type="module" src="main.js"></script>
 </body> 
