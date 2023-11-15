@@ -13,7 +13,11 @@ const selectedLabel = document.getElementById('selectElement.value');
 let img; // declare img variable
 let drawing = false;
 let labels = [];
+let rect;
+let mouseX, mouseY;
+let scaleX, scaleY;
 let startX, startY, endX, endY;
+let xmin, ymin, xmax, ymax;
 let img2;
 let imagesList = [];
 let imageNames = [];
@@ -145,9 +149,11 @@ function updateLabelbar() {
     // Add a div for each bounding box
     for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
         const box = imageLabels[currentImageIndex][i];
+        console.log(box);
         const div = document.createElement('div');
         div.style.color = colorMap[box.labelId];
-        div.textContent = `${box.labelId}: (${box.startX}, ${box.startY}), (${box.endX}, ${box.endY})`;
+        console.log(box.xmin, box.ymin, box.xmax, box.ymax);
+        div.textContent = `${box.labelId}: (${box.xmin}, ${box.ymin}), (${box.xmax}, ${box.ymax})`;
         labelbar.appendChild(div);
     }
 }
@@ -162,15 +168,15 @@ function drawAllBoxes() {
     for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
         const box = imageLabels[currentImageIndex][i];
         ctx.beginPath();
-        ctx.rect(box.startX, box.startY, box.endX - box.startX, box.endY - box.startY);
+        ctx.rect(box.xmin, box.ymin, box.xmax - box.xmin, box.ymax - box.ymin);
         ctx.strokeStyle = colorMap[box.labelId];
         ctx.lineWidth = 2;
         ctx.stroke();
         // Draw the coordinates beside the bounding box
         ctx.fillStyle = colorMap[box.labelId];
         ctx.font = '12px Arial';
-        ctx.fillText(`(${box.startX}, ${box.startY})`, box.startX, box.startY - 5);
-        ctx.fillText(`(${box.endX}, ${box.endY})`, box.endX, box.endY + 15);
+        ctx.fillText(`(${box.xmin}, ${box.ymin})`, box.xmin, box.ymin - 5);
+        ctx.fillText(`(${box.xmax}, ${box.ymax})`, box.xmax, box.ymax + 15);
     }
     
 }
@@ -181,8 +187,14 @@ function drawAllBoxes() {
 // Start drawing bounding box when the mouse is clicked
 canvas.addEventListener('mousedown', function(event) {
     // Get the mouse coordinates
-    const mouseX = parseInt(event.clientX - $(canvas).offset().left);
-    const mouseY = parseInt(event.clientY - $(canvas).offset().top);
+    rect = canvas.getBoundingClientRect();
+    scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
+    scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+
+    mouseX = parseInt((event.clientX - rect.left) * scaleX);  // scale mouse coordinates after they have
+    mouseY = parseInt((event.clientY - rect.top) * scaleY); 
+
+    
 
     // Check if the mouse is inside an existing bounding box
     
@@ -211,16 +223,24 @@ canvas.addEventListener('mousedown', function(event) {
 // Draw bounding box when the mouse is moved
 canvas.addEventListener('mousemove', function(event) {
     if (drawing) {
-        endX = parseInt(event.clientX - $(canvas).offset().left);
-        endY = parseInt(event.clientY - $(canvas).offset().top);
+        
+        endX = parseInt((event.clientX - rect.left) * scaleX);  // scale mouse coordinates after they have
+        endY = parseInt((event.clientY - rect.top) * scaleY)
+
+        // Calculate xmin, ymin, xmax, ymax
+        xmin = Math.min(startX, endX);
+        ymin = Math.min(startY, endY);
+        xmax = Math.max(startX, endX);
+        ymax = Math.max(startY, endY);
+
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const img = new Image();
         img.src = imagesList[currentImageIndex];
         ctx.drawImage(img, 0, 0);
 
         // Draw all existing bounding boxes
-        drawAllBoxes()
-        
+        drawAllBoxes();
 
         // Draw the new or selected bounding box
         ctx.beginPath();
@@ -231,8 +251,8 @@ canvas.addEventListener('mousemove', function(event) {
         // Draw the coordinates beside the new or selected bounding box
         ctx.fillStyle = colorMap[labelId];
         ctx.font = '12px Arial';
-        ctx.fillText(`(${startX}, ${startY})`, startX, startY - 5);
-        ctx.fillText(`(${endX}, ${endY})`, endX, endY + 15);
+        ctx.fillText(`(${xmin}, ${ymin})`, xmin, ymin - 5);
+        ctx.fillText(`(${xmax}, ${ymax})`, xmax, ymax + 15);
     }   
 });
 
@@ -240,14 +260,18 @@ canvas.addEventListener('mousemove', function(event) {
 canvas.addEventListener('mouseup', function(event) {
     drawing = false;
 
+    const xmin = Math.min(startX, endX);
+    const ymin = Math.min(startY, endY);
+    const xmax = Math.max(startX, endX);
+    const ymax = Math.max(startY, endY);
+
     // If a bounding box was selected, update its coordinates
-    
     // Push the new label into the array
     imageLabels[currentImageIndex].push({
-        startX: startX,
-        startY: startY,
-        endX: endX,
-        endY: endY,
+        xmin: xmin,
+        ymin: ymin,
+        xmax: xmax,
+        ymax: ymax,
         labelId: labelId
     });
     updateLabelbar();
@@ -267,10 +291,10 @@ saveButton.addEventListener('click', function() {
         for (let j = 0; j < imageLabels[i].length; j++) {  
              
             const box = imageLabels[i][j];
-            const width = box.endX - box.startX;
-            const height = box.endY - box.startY;
-            const centerX = box.startX + width / 2;
-            const centerY = box.startY + height / 2;
+            const width = box.xmax - box.xmin;
+            const height = box.ymax - box.ymin;
+            const centerX = box.xmin + width / 2;
+            const centerY = box.ymin + height / 2;
 
             // Normalize the coordinates
             const normalizedWidth = width / originalWidth;
@@ -282,7 +306,7 @@ saveButton.addEventListener('click', function() {
         }
         output[imageNames[i]] = yoloLabels;
     }
-    console.log(output);
+    
     // Create a .json file
     const a = document.createElement('a');
     const file = new Blob([JSON.stringify(output)], {type: 'application/json'});
