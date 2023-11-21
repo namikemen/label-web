@@ -10,7 +10,6 @@ const imageUpload = document.getElementById('imageUpload');
 const selectElement = document.getElementById('labelSelect');
 const selectedLabel = document.getElementById('selectElement.value');
 
-
 let img; // declare img variable
 let drawing = false;
 let labels = [];
@@ -353,12 +352,11 @@ canvas.addEventListener('mouseup', function(event) {
 
 
 saveButton.addEventListener('click', function() {
-    const output = {};
+    var zip = new JSZip();
 
     for (let i = 0; i < imageNames.length; i++) {
-        const yoloLabels = [];
+        let output = '';
         for (let j = 0; j < imageLabels[i].length; j++) {  
-             
             const box = imageLabels[i][j];
             const width = box.xmax - box.xmin;
             const height = box.ymax - box.ymin;
@@ -366,23 +364,26 @@ saveButton.addEventListener('click', function() {
             const centerY = box.ymin + height / 2;
 
             // Normalize the coordinates
-            const normalizedWidth = width / originalWidth;
-            const normalizedHeight = height / originalHeight;
-            const normalizedCenterX = centerX / originalWidth;
-            const normalizedCenterY = centerY / originalHeight;
+            const normalizedWidth = parseInt(width / originalWidth);
+            const normalizedHeight = parseInt(height / originalHeight);
+            const normalizedCenterX = parseInt(centerX / originalWidth);
+            const normalizedCenterY = parseInt(centerY / originalHeight);
     
-            yoloLabels.push([box.labelId, normalizedCenterX, normalizedCenterY, normalizedWidth, normalizedHeight]);
+            // Create a line in YOLO format and add it to the output
+            output += `${box.labelId} ${normalizedCenterX} ${normalizedCenterY} ${normalizedWidth} ${normalizedHeight}\n`;
         }
-        output[imageNames[i]] = yoloLabels;
+
+        // Add the .txt file to the zip
+        zip.file(`${imageNames[i]}.txt`, output);
     }
-    
-    // Create a .json file
-    const a = document.createElement('a');
-    const file = new Blob([JSON.stringify(output)], {type: 'application/json'});
-    a.href = URL.createObjectURL(file);
-    a.download = 'labels.json';
-    a.click();
+
+    // Generate the zip file and trigger the download
+    zip.generateAsync({type:"blob"}).then(function(content) {
+        saveAs(content, "labels.zip");
+    });
 });
+
+
 
 // Delete last bounding box when the delete button is clicked
 UndoButton.addEventListener('click', function() {
