@@ -11,10 +11,6 @@
 </head>
 <body>
     <input type="file" id="imageUpload" multiple>
-    <!-- <select id="labelSelect">
-        <option value="0">0</option>
-        <option value="1">1</option>
-    </select> -->
     <div id="sidebar"></div>
     <div id="labelbar-container">
         <h1 id="labelbar-heading">Coordinate</h1>
@@ -25,10 +21,17 @@
         <div class="Tools">
             <button class="button" id="saveButton">Save Labels</button>
             <button class="button" id="UndoButton">Undo</button>
+            <button class="button" id="addLabelButton">Add Label</button>
 
-            <div id="label1" class="color-field" style="background: red;">label 1</div>
-            <div id="label2" class="color-field" style="background: blue;">label 2</div>
-            <div id="label3" class="color-field" style="background: green;">label 3</div>
+            <div class="label-field" style="background: red;">
+                <input type="text" id="label1" value="label 1">
+            </div>
+            <div class="label-field" style="background: blue;">
+                <input type="text" id="label2" value="label 2">
+            </div>
+            <div class="label-field" style="background: green;">
+                <input type="text" id="label3" value="label 3">
+            </div>
 
         </div>
     </div>

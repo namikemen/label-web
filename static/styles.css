@@ -55,9 +55,9 @@ body {
     margin-top: 15px;
 }
 
-.Tools .color-field { 
+.Tools .label-field { 
     height: 40px; 
-    width: 60px; 
+    width: 50px; 
     min-height: 40px; 
     min-width: 40px;
     display: inline-block;
@@ -66,21 +66,30 @@ body {
     border-radius: 50%;
     border: 2px solid ;
     align-self: center;
-    margin: 0 15px;
+    margin: 0 10px;
     text-align: center;
     color: rgb(211, 211, 211);
 }
 
+input[type="text"] {
+    width: 100%;
+    padding: 0px 0px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    /* border: 2px solid #ccc; */
+    border-radius: 7px;
+}
+
 .Tools .button {
     /* align-self: center; */
-    width: 100px;
+    width: 60px;
     height: 40px;
     border: 2px solid;
     cursor: pointer;
     color: rgb(174, 171, 171);
     background: #222;
     font-weight: bold;
-    margin: 0 15px;
+    margin: 0 10px;
     border-radius: 3%;
 }
 
@@ -116,7 +125,8 @@ body {
     top: auto;
     width: 200px;
     height: 100%;
-    overflow: auto;
+    max-height: 250px;
+    overflow-y: auto;
     background-color: #090a0a;
     border: 2px solid rgb(171, 166, 166);
     padding: 1em;

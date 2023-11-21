@@ -23,24 +23,44 @@ let imagesList = [];
 let imageNames = [];
 let selectedBox = null;
 let labelId = 'label1';
-let colorMap = {
-    'label1': 'red',
-    'label2': 'blue',
-    'label3': 'green',
-}
 let currentImageIndex = 0; // Keep track of the current image
 let imageLabels = {}; // Keep track of the labels for each image
 let originalHeight;
 let originalWidth;
+let colorMap = {};
+
+
+// Set up the label fields
+let labelFields = document.querySelectorAll('.label-field');
+function setupLabelField(field) {
+    const inputField = field.querySelector('input');
+
+    field.addEventListener('click', function() {
+        labelId = inputField.value;
+    });
+
+    // Update colorMap when a new value is inputted
+    inputField.addEventListener('input', function() {
+        // Get the background color of the field
+        const backgroundColor = window.getComputedStyle(field).backgroundColor;
+
+        // Get the new value of the input field
+        const newLabelValue = this.value;
+
+        // Update the colorMap with the new value
+        colorMap[newLabelValue] = backgroundColor;
+    });
+}
+
+// Set up the existing label fields
+labelFields.forEach(setupLabelField);
+
+
+
+
 
 document.getElementById('imageUpload').addEventListener('change', function(event) {
         const files = event.target.files;
-        const colorFields = document.querySelectorAll('.color-field');
-        colorFields.forEach(function(field) {
-            field.addEventListener('click', function() {
-                labelId = this.id;
-            });
-        });
         sidebar.innerHTML = '';
         for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -66,6 +86,7 @@ document.getElementById('imageUpload').addEventListener('change', function(event
                         drawAllBoxes();
                         updateLabelbar();
                         updateSidebar();
+                        
                         }
                     sidebar.appendChild(this);
                     };
@@ -79,34 +100,7 @@ document.getElementById('imageUpload').addEventListener('change', function(event
 );
 
 
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'ArrowRight') {
-        // Move to the next image
 
-        currentImageIndex++;
-        
-        if (currentImageIndex >= imagesList.length) {
-            currentImageIndex = 0; // Loop back to the first image
-        }
-    } else if (event.key === 'ArrowLeft') {
-        // Move to the previous image
-        currentImageIndex--;
-        if (currentImageIndex < 0) {
-            currentImageIndex = imagesList.length - 1; // Loop back to the last image
-        }
-    }
-    const img = new Image();
-    img.src = imagesList[currentImageIndex];
-    img.onload = function() {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        labelbar.innerHTML = '';
-        updateLabelbar();
-        updateSidebar();
-        
-    };
-});
 
 
 function updateSidebar() {
@@ -149,11 +143,9 @@ function updateLabelbar() {
     // Add a div for each bounding box
     for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
         const box = imageLabels[currentImageIndex][i];
-        console.log(box);
         const div = document.createElement('div');
         div.style.color = colorMap[box.labelId];
-        console.log(box.xmin, box.ymin, box.xmax, box.ymax);
-        div.textContent = `${box.labelId}: (${box.xmin}, ${box.ymin}), (${box.xmax}, ${box.ymax})`;
+        div.textContent = `${box.labelId} (id: ${i}): (${box.xmin}, ${box.ymin}), (${box.xmax}, ${box.ymax})`;
         labelbar.appendChild(div);
     }
 }
@@ -175,12 +167,11 @@ function drawAllBoxes() {
         // Draw the coordinates beside the bounding box
         ctx.fillStyle = colorMap[box.labelId];
         ctx.font = '12px Arial';
-        ctx.fillText(`(${box.xmin}, ${box.ymin})`, box.xmin, box.ymin - 5);
+        ctx.fillText(`id: ${i} (${box.xmin}, ${box.ymin})`, box.xmin, box.ymin - 5);
         ctx.fillText(`(${box.xmax}, ${box.ymax})`, box.xmax, box.ymax + 15);
     }
     
 }
-
 
 
 
@@ -200,13 +191,16 @@ canvas.addEventListener('mousedown', function(event) {
     
     // for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
     //     const box = imageLabels[currentImageIndex][i];
-    //     if (mouseX >= box.startX && mouseX <= box.endX && mouseY >= box.startY && mouseY <= box.endY) {
+    //     if (mouseX >= box.xmin && mouseX <= box.xmax && mouseY >= box.ymin && mouseY <= box.ymax) {
     //         selectedBox = i;
-    //         startX = box.startX;
-    //         startY = box.startY;
-    //         endX = box.endX;
-    //         endY = box.endY;
+    //         startX = box.xmin;
+    //         startY = box.ymin;
+    //         endX = box.xmax;
+    //         endY = box.ymax;
     //         drawing = true;
+
+    //         // Remove the previous bounding box from imageLabels
+    //         imageLabels[currentImageIndex].splice(i, 1);
     //         break;
     //     }
     // }
@@ -253,7 +247,39 @@ canvas.addEventListener('mousemove', function(event) {
         ctx.font = '12px Arial';
         ctx.fillText(`(${xmin}, ${ymin})`, xmin, ymin - 5);
         ctx.fillText(`(${xmax}, ${ymax})`, xmax, ymax + 15);
+
+        selectedBox = null;
     }   
+});
+
+document.addEventListener('keydown', function(event) {
+    console.log(colorMap);
+    if (event.key === 'ArrowRight') {
+        // Move to the next image
+
+        currentImageIndex++;
+        
+        if (currentImageIndex >= imagesList.length) {
+            currentImageIndex = 0; // Loop back to the first image
+        }
+    } else if (event.key === 'ArrowLeft') {
+        // Move to the previous image
+        currentImageIndex--;
+        if (currentImageIndex < 0) {
+            currentImageIndex = imagesList.length - 1; // Loop back to the last image
+        }
+    }
+    const img = new Image();
+    img.src = imagesList[currentImageIndex];
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        labelbar.innerHTML = '';
+        updateLabelbar();
+        updateSidebar();
+        
+    };
 });
 
 // Stop drawing bounding box when the mouse is released
@@ -334,3 +360,34 @@ UndoButton.addEventListener('click', function() {
         }
     }
 });
+
+document.getElementById('addLabelButton').addEventListener('click', function() {
+    // Create a new label field
+    const labelField = document.createElement('div');
+    labelField.className = 'label-field';
+
+    // Create an input field inside the label field
+    const inputField = document.createElement('input');
+    inputField.type = 'text';
+    labelField.appendChild(inputField);
+
+    // Create a color picker inside the label field
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    labelField.appendChild(colorPicker);
+
+    colorPicker.addEventListener('input', function() {
+        // Set the background color of the label field to the chosen color
+        labelField.style.backgroundColor = this.value;
+
+        // Add the chosen color to the colorMap for the current label
+        colorMap[inputField.value] = this.value;
+    });
+    // Append the label field to the .Tools div
+    document.querySelector('.Tools').appendChild(labelField);
+    setupLabelField(labelField);
+    // Add event listeners to the new label field and input field
+    // Similar to the ones you added to the existing label fields...
+});
+
+

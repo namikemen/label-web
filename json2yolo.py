@@ -11,4 +11,4 @@ for filename, labels in data.items():
         # For each label in the list
         for label in labels:
             # Write the label to the file, followed by a newline
-            f.write(' '.join(map(str, label)) + '\n')
+            f.write(' '.join(map(str, label)) + '\n')  
