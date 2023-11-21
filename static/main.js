@@ -4,7 +4,6 @@ const ctx = canvas.getContext('2d');
 const saveButton = document.getElementById('saveButton');
 const UndoButton = document.getElementById('UndoButton');
 const addLabelButton = document.getElementById('addLabelButton');
-const sidebar = document.getElementById('sidebar');
 const labelbar = document.getElementById('labelbar');
 const imageUpload = document.getElementById('imageUpload');
 const selectElement = document.getElementById('labelSelect');
@@ -28,6 +27,7 @@ let imageLabels = {}; // Keep track of the labels for each image
 let originalHeight;
 let originalWidth;
 let colorMap = {};
+let isLoading = false;
 
 
 // Set up the label fields
@@ -57,86 +57,96 @@ labelFields.forEach(setupLabelField);
 
 
 
+
+
 document.getElementById('imageUpload').addEventListener('change', function(event) {
-        const files = event.target.files;
-        sidebar.innerHTML = '';
-        for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                imageLabels[i] = [];
-                img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                // Set a standard width for the images in the sidebar
-                img.onload = function() {
-                    // Store the original dimensions of the image
-                    originalWidth = this.width;
-                    originalHeight = this.height;
-            
-                    // Resize the image for the sidebar
-                    this.height = 100;
-                    this.width = 100;
-            
-                    this.onclick = function() {
-                        // Use the original dimensions of the image for the canvas
-                        canvas.width = originalWidth;
-                        canvas.height = originalHeight;
-                        ctx.drawImage(this, 0, 0, originalWidth, originalHeight);
-                        currentImageIndex = i; 
-                        drawAllBoxes();
-                        updateLabelbar();
-                        updateSidebar();
-                        
-                        }
-                    sidebar.appendChild(this);
-                    };
-                    
-                    imagesList.push(img.src);
-                    imageNames.push(file.name);
-                };
-                
-        },
-        
-);
+    const files = event.target.files;
+    const progressBar = document.getElementById('progressBar');
 
+    // Clear the progress bar
+    progressBar.innerHTML = '';
 
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        imageLabels[i] = [];
 
+        // Store the file URL instead of creating an img element
+        imagesList[i] = URL.createObjectURL(file);
 
-
-function updateSidebar() {
-    // Clear the sidebar
-    sidebar.innerHTML = '';
-
-    // Add each image to the sidebar
-    for (let i = 0; i < imagesList.length; i++) {
-        const img = document.createElement('img');
-        img.src = imagesList[i];
-        img.width = 100;
-        img.height = 100;
-
-        // If the image has been drawn on, give it a green border
-        if (imageLabels[i] && imageLabels[i].length > 0) {
-            img.style.border = '3px solid green';
-        }
-
-        // If the image is the current image, give it a red border
-        if (i === currentImageIndex) {
-            img.style.border = '3px solid red';
-        }
-
-        // Add a click event to the image
-        img.addEventListener('click', function() {
-            ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+        // Create a square for the image
+        const square = document.createElement('div');
+        square.classList.add('square');
+        square.addEventListener('click', function() {
+            // Set currentImageIndex to i and load the image
             currentImageIndex = i;
+            loadImage(currentImageIndex);
+        });
+        progressBar.appendChild(square);
+    }
+
+    // Load the first image
+    loadImage(0);
+});
+
+window.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowLeft') {
+        // Decrease currentImageIndex by 1 and load the image
+        currentImageIndex = Math.max(0, currentImageIndex - 1);
+        loadImage(currentImageIndex);
+    } else if (event.key === 'ArrowRight') {
+        // Increase currentImageIndex by 1 and load the image
+        currentImageIndex = Math.min(imagesList.length - 1, currentImageIndex + 1);
+        loadImage(currentImageIndex);
+    }
+});
+
+function loadImage(index) {
+    // If an image is currently being loaded, return immediately
+    if (isLoading) {
+        return;
+    }
+
+    if (index < imagesList.length) {
+        isLoading = true;
+
+        const img = new Image();
+        img.src = imagesList[index];
+
+        img.onload = function() {
+            // Store the original dimensions of the image
+            originalWidth = this.width;
+            originalHeight = this.height;
+
+            // Use the original dimensions of the image for the canvas
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            ctx.drawImage(this, 0, 0, originalWidth, originalHeight);
+            currentImageIndex = index; 
             drawAllBoxes();
             updateLabelbar();
-            updateSidebar();
-        });
 
-        sidebar.appendChild(img);
+            // Update the squares
+            const squares = document.querySelectorAll('.square');
+            squares.forEach((square, i) => {
+                square.classList.remove('selected');
+                if (imageLabels[i] && imageLabels[i].length > 0) {
+                    square.classList.add('drawn');
+                }
+                if (i === index) {
+                    square.classList.add('selected');
+                }
+            });
+
+            isLoading = false;
+        };
     }
 }
 
+
+
+
+
 function updateLabelbar() {
-    // Clear the sidebar
     labelbar.innerHTML = '';
     // Add a div for each bounding box
     for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
@@ -293,36 +303,6 @@ canvas.addEventListener('mousemove', function(event) {
     }   
 });
 
-document.addEventListener('keydown', function(event) {
-    console.log(colorMap);
-    if (event.key === 'ArrowRight') {
-        // Move to the next image
-
-        currentImageIndex++;
-        
-        if (currentImageIndex >= imagesList.length) {
-            currentImageIndex = 0; // Loop back to the first image
-        }
-    } else if (event.key === 'ArrowLeft') {
-        // Move to the previous image
-        currentImageIndex--;
-        if (currentImageIndex < 0) {
-            currentImageIndex = imagesList.length - 1; // Loop back to the last image
-        }
-    }
-    const img = new Image();
-    img.src = imagesList[currentImageIndex];
-    img.onload = function() {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        labelbar.innerHTML = '';
-        updateLabelbar();
-        updateSidebar();
-        drawAllBoxes();
-        
-    };
-});
 
 // Stop drawing bounding box when the mouse is released
 canvas.addEventListener('mouseup', function(event) {
