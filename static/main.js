@@ -18,16 +18,18 @@ let scaleX, scaleY;
 let startX, startY, endX, endY;
 let xmin, ymin, xmax, ymax;
 let img2;
-let imagesList = [];
-let imageNames = [];
+let imagesList = []; // Store the URLs of the uploaded images
+let imageNames = []; // Store the names of the uploaded images
 let selectedBox = null;
-let labelId = 'label1';
+let labelId = 'label1'; // Keep track of the selected label
 let currentImageIndex = 0; // Keep track of the current image
 let imageLabels = {}; // Keep track of the labels for each image
 let originalHeight;
 let originalWidth;
 let colorMap = {};
 let isLoading = false;
+let imageNameToIndexMap = {}; // Keep track of the images and their corresponding index
+
 
 
 // Set up the label fields
@@ -57,8 +59,6 @@ labelFields.forEach(setupLabelField);
 
 
 
-
-
 document.getElementById('imageUpload').addEventListener('change', function(event) {
     const files = event.target.files;
     const progressBar = document.getElementById('progressBar');
@@ -68,6 +68,8 @@ document.getElementById('imageUpload').addEventListener('change', function(event
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        imageNames[i] = file.name;
+        imageNameToIndexMap[file.name] = i;
         imageLabels[i] = [];
 
         // Store the file URL instead of creating an img element
@@ -83,7 +85,6 @@ document.getElementById('imageUpload').addEventListener('change', function(event
         });
         progressBar.appendChild(square);
     }
-
     // Load the first image
     loadImage(0);
 });
@@ -142,8 +143,37 @@ function loadImage(index) {
     }
 }
 
+// Load annotations
+document.getElementById('annotationUpload').addEventListener('change', function(event) {
+    const files = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = function() {
+            const imageName = file.name.replace('.txt', '.jpg');
+            const imageIndex = imageNameToIndexMap[imageName];
+            const annotations = reader.result.split('\n');
+            imageLabels[imageIndex] = annotations.map(annotation => {
+                const [labelId, normalizedCenterX, normalizedCenterY, normalizedWidth, normalizedHeight] = annotation.split(' ').map(Number);
+                // Assuming you have the original image's width and height
+                
+                const centerX = normalizedCenterX * originalWidth;
+                const centerY = normalizedCenterY * originalHeight;
+                const width = normalizedWidth * originalWidth;
+                const height = normalizedHeight * originalHeight;
 
+                const xmin = centerX - width / 2;
+                const ymin = centerY - height / 2;
+                const xmax = centerX + width / 2;
+                const ymax = centerY + height / 2;
+                console.log({ labelId, xmin, ymin, xmax, ymax });
+                return { labelId, xmin, ymin, xmax, ymax };
+            });
+        };
 
+        reader.readAsText(file);
+    }
+});
 
 
 function updateLabelbar() {
@@ -344,17 +374,17 @@ saveButton.addEventListener('click', function() {
             const centerY = box.ymin + height / 2;
 
             // Normalize the coordinates
-            const normalizedWidth = parseInt(width / originalWidth);
-            const normalizedHeight = parseInt(height / originalHeight);
-            const normalizedCenterX = parseInt(centerX / originalWidth);
-            const normalizedCenterY = parseInt(centerY / originalHeight);
+            const normalizedWidth = width / originalWidth;
+            const normalizedHeight = height / originalHeight;
+            const normalizedCenterX = centerX / originalWidth;
+            const normalizedCenterY = centerY / originalHeight;
     
             // Create a line in YOLO format and add it to the output
             output += `${box.labelId} ${normalizedCenterX} ${normalizedCenterY} ${normalizedWidth} ${normalizedHeight}\n`;
         }
 
         // Add the .txt file to the zip
-        zip.file(`${imageNames[i]}.txt`, output);
+        zip.file(`${imageNames[i]}`.replace('.jpg','.txt'), output);
     }
 
     // Generate the zip file and trigger the download
@@ -362,7 +392,6 @@ saveButton.addEventListener('click', function() {
         saveAs(content, "labels.zip");
     });
 });
-
 
 
 // Delete last bounding box when the delete button is clicked
