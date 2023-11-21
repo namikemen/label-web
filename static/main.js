@@ -3,6 +3,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const saveButton = document.getElementById('saveButton');
 const UndoButton = document.getElementById('UndoButton');
+const addLabelButton = document.getElementById('addLabelButton');
 const sidebar = document.getElementById('sidebar');
 const labelbar = document.getElementById('labelbar');
 const imageUpload = document.getElementById('imageUpload');
@@ -54,8 +55,6 @@ function setupLabelField(field) {
 
 // Set up the existing label fields
 labelFields.forEach(setupLabelField);
-
-
 
 
 
@@ -146,16 +145,39 @@ function updateLabelbar() {
         const div = document.createElement('div');
         div.style.color = colorMap[box.labelId];
         div.textContent = `${box.labelId} (id: ${i}): (${box.xmin}, ${box.ymin}), (${box.xmax}, ${box.ymax})`;
+
+        // Create the 'x' element
+        const x = document.createElement('span');
+        x.textContent = ' x';
+        x.style.cursor = 'pointer';
+        x.style.float = 'right';
+
+        // Add a click event listener to the 'x' element
+        x.addEventListener('click', function() {
+            // Remove the bbox from imageLabels
+            imageLabels[currentImageIndex].splice(i, 1);
+
+            // Update the label bar
+            updateLabelbar();
+            drawAllBoxes();
+        });
+
+        // Append the 'x' element to the div
+        div.appendChild(x);
+
         labelbar.appendChild(div);
     }
 }
-
 
 /////////////////////////////////
 //////////// DRAWING ////////////
 /////////////////////////////////
 
 function drawAllBoxes() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const img = new Image();
+    img.src = imagesList[currentImageIndex];
+    ctx.drawImage(img, 0, 0);
     // Draw all existing bounding boxes
     for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
         const box = imageLabels[currentImageIndex][i];
@@ -189,21 +211,41 @@ canvas.addEventListener('mousedown', function(event) {
 
     // Check if the mouse is inside an existing bounding box
     
-    // for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
-    //     const box = imageLabels[currentImageIndex][i];
-    //     if (mouseX >= box.xmin && mouseX <= box.xmax && mouseY >= box.ymin && mouseY <= box.ymax) {
-    //         selectedBox = i;
-    //         startX = box.xmin;
-    //         startY = box.ymin;
-    //         endX = box.xmax;
-    //         endY = box.ymax;
-    //         drawing = true;
+    for (let i = 0; i < imageLabels[currentImageIndex].length; i++) {
+        const box = imageLabels[currentImageIndex][i];
+        const midX = (box.xmin + box.xmax) / 2;
+        const midY = (box.ymin + box.ymax) / 2;
 
-    //         // Remove the previous bounding box from imageLabels
-    //         imageLabels[currentImageIndex].splice(i, 1);
-    //         break;
-    //     }
-    // }
+        if (mouseX >= box.xmin && mouseX <= box.xmax && mouseY >= box.ymin && mouseY <= box.ymax) {
+            selectedBox = i;
+            drawing = true;
+
+            // Remove the previous bounding box from imageLabels
+            imageLabels[currentImageIndex].splice(i, 1);
+
+            // Determine which quadrant the mouse is in and fix the opposite corner
+            if (mouseX <= midX && mouseY <= midY) {
+                // Top left quadrant, fix bottom right corner
+                startX = box.xmax;
+                startY = box.ymax;
+            } else if (mouseX > midX && mouseY <= midY) {
+                // Top right quadrant, fix bottom left corner
+                startX = box.xmin;
+                startY = box.ymax;
+            } else if (mouseX <= midX && mouseY > midY) {
+                // Bottom left quadrant, fix top right corner
+                startX = box.xmax;
+                startY = box.ymin;
+            } else {
+                // Bottom right quadrant, fix top left corner
+                startX = box.xmin;
+                startY = box.ymin;
+            }
+
+            drawAllBoxes();
+            break;
+        }
+    }
 
     // If the mouse is not inside an existing bounding box, start drawing a new one
     if (selectedBox === null) {
@@ -278,6 +320,7 @@ document.addEventListener('keydown', function(event) {
         labelbar.innerHTML = '';
         updateLabelbar();
         updateSidebar();
+        drawAllBoxes();
         
     };
 });
@@ -361,7 +404,7 @@ UndoButton.addEventListener('click', function() {
     }
 });
 
-document.getElementById('addLabelButton').addEventListener('click', function() {
+addLabelButton.addEventListener('click', function() {
     // Create a new label field
     const labelField = document.createElement('div');
     labelField.className = 'label-field';
@@ -391,3 +434,29 @@ document.getElementById('addLabelButton').addEventListener('click', function() {
 });
 
 
+let lastKey = null;
+let lastKeyTime = null;
+
+window.addEventListener('keydown', function(event) {
+    if (lastKey === event.key && Date.now() - lastKeyTime < 500) {
+        switch (event.key.toUpperCase()) {
+            case 'U':
+                // Trigger undo button
+                UndoButton.click();
+                break;
+            case 'A':
+                // Trigger add label
+                addLabelButton.click();
+                // Replace with your actual function to add label
+                break;
+            case 'S':
+                // Trigger save label
+                saveButton.click();
+                // Replace with your actual function to save label
+                break;
+        }
+    }
+
+    lastKey = event.key;
+    lastKeyTime = Date.now();
+});
