@@ -6,8 +6,7 @@ const UndoButton = document.getElementById('UndoButton');
 const addLabelButton = document.getElementById('addLabelButton');
 const labelbar = document.getElementById('labelbar');
 const imageUpload = document.getElementById('imageUpload');
-const selectElement = document.getElementById('labelSelect');
-const selectedLabel = document.getElementById('selectElement.value');
+const annotationUpload = document.getElementById('annotationUpload');
 
 let img; // declare img variable
 let drawing = false;
@@ -17,7 +16,6 @@ let mouseX, mouseY;
 let scaleX, scaleY;
 let startX, startY, endX, endY;
 let xmin, ymin, xmax, ymax;
-let img2;
 let imagesList = []; // Store the URLs of the uploaded images
 let imageNames = []; // Store the names of the uploaded images
 let selectedBox = null;
@@ -29,7 +27,8 @@ let originalWidth;
 let colorMap = {};
 let isLoading = false;
 let imageNameToIndexMap = {}; // Keep track of the images and their corresponding index
-
+let lastKey = null;
+let lastKeyTime = null;
 
 
 // Set up the label fields
@@ -55,11 +54,12 @@ function setupLabelField(field) {
 }
 
 // Set up the existing label fields
-labelFields.forEach(setupLabelField);
+labelFields.forEach(field => setupLabelField(field));
 
 
 
-document.getElementById('imageUpload').addEventListener('change', function(event) {
+
+imageUpload.addEventListener('change', function(event) {
     const files = event.target.files;
     const progressBar = document.getElementById('progressBar');
 
@@ -144,7 +144,7 @@ function loadImage(index) {
 }
 
 // Load annotations
-document.getElementById('annotationUpload').addEventListener('change', function(event) {
+annotationUpload.addEventListener('change', function(event) {
     const files = event.target.files;
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -166,7 +166,6 @@ document.getElementById('annotationUpload').addEventListener('change', function(
                 const ymin = centerY - height / 2;
                 const xmax = centerX + width / 2;
                 const ymax = centerY + height / 2;
-                console.log({ labelId, xmin, ymin, xmax, ymax });
                 return { labelId, xmin, ymin, xmax, ymax };
             });
         };
@@ -444,8 +443,7 @@ addLabelButton.addEventListener('click', function() {
 });
 
 
-let lastKey = null;
-let lastKeyTime = null;
+
 
 window.addEventListener('keydown', function(event) {
     if (lastKey === event.key && Date.now() - lastKeyTime < 500) {

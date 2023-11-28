@@ -1,4 +1,2 @@
-data
 __pycache__
-/static/test
-/yolo_label
+/static/label_field.js
